@@ -4,20 +4,45 @@ const Wishlist: React.FC = () => {
   const wishlistFormRef = useRef<HTMLDivElement>(null);
 
   const [email, setEmail] = useState('');
-
+  const [message, setMessage] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const handleScrollToWishlist = () => {
     wishlistFormRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault(); // Prevents the page from reloading on submit
-    if (email) {
-      console.log('Submitted email:', email);
-      // TODO: Add your logic here to send the email to your backend or a service like Mailchimp
-      alert(`Thank you for joining the wishlist with ${email}!`);
-      setEmail(''); // Clear the input field after submission
-    } else {
-      alert('Please enter a valid email address.');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // Prevents the page from reloading
+    setMessage(''); // Clear previous messages
+    setIsSubmitting(true); // Disable button
+
+    try {
+      // Send the data to your backend API
+      const response = await fetch('http://localhost:3000/api/subscribe', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: email }), // Send email in JSON format
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        // If the server responded with an error (e.g., 409 duplicate email)
+        throw new Error(result.message || 'Something went wrong');
+      }
+
+      // Handle success
+      setMessage('✅ Thank you! You have been added to the wishlist.');
+      setEmail(''); // Clear the input field
+
+    } catch (error: any) {
+      // Handle network errors or errors from the server
+      console.error('Submission failed:', error);
+      setMessage(`❌ Error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false); // Re-enable button
     }
   };
 
@@ -98,9 +123,10 @@ const Wishlist: React.FC = () => {
                 type="submit"
                 className="bg-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
               >
-                Submit
+                {isSubmitting ? 'Submitting...' : 'Submit'}
               </button>
             </form>
+            {message && <p className="mt-4 text-sm">{message}</p>}
           </div>
         </section>
         {/* --- END OF NEW SECTION --- */}
@@ -111,3 +137,4 @@ const Wishlist: React.FC = () => {
 };
 
 export default Wishlist;
+
